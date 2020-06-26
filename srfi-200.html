@@ -23,8 +23,8 @@ The editor will add this section.
 
 <h2>Abstract</h2>
 
-<p>This SRFI discusses the most widespread existing pattern matching libraries
-  for the Scheme programming language - namely, the pattern matcher
+<p>This SRFI discusses the most widespread existing pattern-matching libraries
+  for the Scheme programming language &mdash; namely, the pattern matcher
   presented by Andrew K. Wright and Robert Cartwright in the paper "A Soft
   Type System for Scheme", the pattern matcher developed by Dan Friedman,
   Erik Hilsdale and Kent Dybvig, and the <code>racket/match</code> module
@@ -37,18 +37,17 @@ The editor will add this section.
 
 <h2>Issues</h2>
 
-??? Optional section that may point out things to be resolved.  This
-will not appear in the final SRFI.
+None at present.
 
 <h2>Rationale</h2>
 
-<p>Pattern Matching is a technique of (conditionally) naming
+<p>Pattern matching is a technique for (conditionally) naming
   components of compound data structures. It is commonly known
-  in the functional programming circles, and it has been adapted
+  in functional programming circles, and it has been adapted
   to the Scheme programming language in the early 1990s.</p>
 
-<p>It also partially overlaps in its functionality with
-  the technique called <i>destructuring bind</i> known from Common Lisp.</p>
+<p>It also partially overlaps in functionality with
+  the technique called <i>destructuring bind</i>, known from Common Lisp.</p>
 
 <p>For example, instead of writing</p>
 
@@ -68,15 +67,15 @@ it is often more clear and concise to write
 </pre>
 
 <p>Today, there exist a few different implementations that offer
-  many extensions to the basic pattern matching facility, and that
-  are mutually incompatible with each other.</p>
+  many extensions to the basic pattern-matching facility, and that
+  are mutually incompatible.</p>
 
 <p>The purpose to this SRFI is to codify the basic common features
-  that are present in all or most of those libraries, in order to
+  that are present in all or most of those libraries in order to
   facilitate the development of portable programs that utilize
   pattern matching.</p>
 
-<p>This document isn't meant to serve as a comprehensive documentation
+<p>This document isn't meant to serve as comprehensive documentation
   for any of the discussed libraries, as they are already well documented
   in their appropriate sources.</p>
 
@@ -86,7 +85,7 @@ it is often more clear and concise to write
 <h2>Specification</h2>
 
 <p>The main interface to using syntactic pattern matching is the same for
-  all libraries discussed in this document - namely, the <code>match</code>
+  all libraries discussed in this document &mdash; namely, the <code>match</code>
   macro, which is used in the following way:</p>
 <pre>
   (match expression
@@ -98,7 +97,7 @@ it is often more clear and concise to write
 <p>where <code>&lt;actions-<i>X</i>*&gt;</code> are optional sequences
   of expressions.</p>
 
-<p>The <code>expression</code> is evaluated once and its value is
+<p>The <code>expression</code> is evaluated once, and its value is
   tested against the subsequent <code>&lt;pattern-<i>X</i>&gt;</code>
   patterns. When the first matching pattern
   <code>&lt;pattern-<i>K</i>&gt;</code> is encountered,
@@ -126,17 +125,17 @@ it is often more clear and concise to write
 
 <h2>The Wright-Cartwright-Shinn pattern matcher</h2>
 
-<p>Probably the most common pattern matching library distributed
+<p>Probably the most common pattern-matching library distributed
   with some popular Scheme implementations is the
   <code><a href="http://synthcode.com/scheme/match.scm">match.scm</a></code>
-  module developed in portable <code>syntax-rules</code> macros based on
+  module developed in portable <code>syntax-rules</code> macros.  It is based on
   a specification developed by Andrew K. Wright and Robert
-  Cartwright in their paper,
+  Cartwright in their paper
   <a href="https://www.iro.umontreal.ca/~feeley/cours/ift6232/doc/pres2/practical-soft-type-system-for-scheme.pdf">A Practical Soft Type System for Scheme</a>.</p>
 
 <p>It is available, for example, in Guile Scheme as the
   <a href="https://www.gnu.org/software/guile/manual/html_node/Pattern-Matching.html"><code>(ice-9 match)</code></a>
-  module, or in Chicken Scheme as the
+  module, and in Chicken Scheme as the
   <a href="http://wiki.call-cc.org/eggref/4/matchable">matchable</a>
   module.</p>
 
@@ -159,7 +158,7 @@ it is often more clear and concise to write
   the tail of the data matches the tail of the pattern. So for example,
   the list <code>(1 2)</code> matches the pattern <code>(a b)</code>
   (with <code>a</code> being bound to <code>1</code> and <code>b</code>
-  being bound to <code>2</code>, but it also matches the pattern
+  being bound to <code>2</code>), but it also matches the pattern
   <code>(a . b)</code> (where <code>a</code> is bound to <code>1</code>
   and <code>b</code> is bound to <code>(2)</code>).</p>
 
@@ -170,7 +169,7 @@ it is often more clear and concise to write
   <code>(1 . 1)</code> or <code>((1) . (1))</code>, but it does
   not match the value <code>(1 . 2)</code> or the value <code>(1 1)</code>.</p>
 
-<p>This allows to define a function that removes adjacent <code>equal?</code>
+<p>This allows one to define a function that removes adjacent <code>equal?</code>
   elements from a list in the following way:</p>
 
 <pre>
@@ -223,7 +222,7 @@ it is often more clear and concise to write
 <p>More interestingly, if the head of the pattern is the symbol
   <code>quasiquote</code>, then the pattern behaves similarly
   to quasi-quotation, attributing special meaning to the <code>unquote</code>
-  symbol. In particular, this allows to express
+  symbol. In particular, this allows one to express
   the above definition of the function <code>unique</code>
   as:</p>
 
@@ -268,7 +267,7 @@ it is often more clear and concise to write
   a pattern, but no more than one ellipsis is allowed to appear
   at a single level of nesting. The behavior of the operator is
   best illustrated with an example - the <code>palindrome?</code>
-  predicate which evaluates to <code>#true</code> iff its argument
+  predicate, which evaluates to <code>#true</code> iff its argument
   is a list <code>equal?</code> to its own reverse:</p>
 
 <pre>
@@ -301,13 +300,13 @@ it is often more clear and concise to write
 
 <h3>Boolean combinations</h3>
 
-<p>The Wright-Cartwright-Shinn matcher also allows to combine patterns using
+<p>The Wright-Cartwright-Shinn matcher also allows one to combine patterns using
   Boolean operators: <code>(and pat-1 ... pat-n)</code> matches
   if a given object matches all of the <code>pat-1 ... pat-n</code>
   patterns, <code>(or pat-1 ... pat-n)</code> matches if a given object
   matches any of the <code>pat-1 ... pat-n</code> patterns,
   and <code>(not pat-1 ... pat-n)</code> matches if an object does not match
-  any of <code>pat-1 ... pat-n</code> patterns.</p>
+  any of the <code>pat-1 ... pat-n</code> patterns.</p>
 
 <h3>The complete grammar for the Wright-Cartwright-Shinn matcher</h3>
 
@@ -506,7 +505,7 @@ in their Racket program. It can also be found in the
 <p>The distinctive feature of the Racket matcher is the ability to provide
   <i>derived patterns</i>. In addition to the <code>match</code> form,
   Racket provides the <code>define-match-expander</code> extension mechanism,
-  which allows to define new types of patterns.</p>
+  which allows one to define new types of patterns.</p>
 
 <h2>The Friedman-Hilsdale-Dybvig pattern matcher</h2>
 
@@ -519,7 +518,7 @@ in their Racket program. It can also be found in the
   in the case of Friedman-Hilsdale-Dybvig matcher, the patterns are <i>implicitly
   quasi-quoted</i>.</p>
 
-<p>This means, that in order to transform the basic patterns
+<p>This means, that in order to adapt the basic patterns
   of the Friedman-Hilsdale-Dybvig matcher to the Wright-Cartwright-Shinn matcher,
   one needs to wrap each pattern in a <code>quasiquote</code>. In other
   words, assuming that the Wright-Cartwright-Shinn matcher is available
@@ -564,7 +563,7 @@ in their Racket program. It can also be found in the
 <p>Of course, this only works for basic patterns, and doesn't include
   extensions like predicates or Boolean combinations.</p>
 
-<p>It is worth to note that the same basic quasiquotation patterns are also
+<p>It is worth noting that the same basic quasiquotation patterns are also
   supported by the Racket pattern matcher.</p>
 
 <h3>Pattern guards</h3>
@@ -601,12 +600,12 @@ The documentation provides the following syntax for patterns
            | Id
 </pre>
 
-<h2>Other pattern matching libraries</h2>
+<h2>Other pattern-matching libraries</h2>
 
 <h3>The <code>syntax-case</code>/<code>syntax-rules</code> pattern language</h3>
 
 <p>Apart from the libraries discussed in this document, the core Scheme language
-  already provides some pattern matching capabilities, namely the
+  already provides some pattern-matching capabilities, namely the
   <code>syntax-rules</code>/<code>syntax-case</code> pattern language.</p>
 
 <p>Unfortunately, the applicability of this language is limited to macro
@@ -618,14 +617,14 @@ The documentation provides the following syntax for patterns
 <h3>Structural pattern matching</h3>
 
 <p>This document focuses on libraries which extend the syntax of Scheme
-  with pattern matching capabilities. It is perhaps worth to mention,
-  that the term "pattern matching" is also sometimes being used in a slightly
+  with pattern-matching capabilities. It is perhaps worth mentioning
+  that the term "pattern matching" is also sometimes used in a slightly
   different sense: not as a syntactic extension to a language, but as a function
   that takes an s-expression representing a pattern and some object, and returns
   a list of bindings (for example, in the form of an association list) that
   could turn a pattern into that object.</p>
 
-<p>This kind of a pattern matching library has been described, for example,
+<p>This kind of a pattern-matching library has been described, for example,
   in the <a href="https://github.com/norvig/paip-lisp/blob/master/docs/chapter5.md">fifth chapter</a> of Peter Norvig's book
   <a href="https://github.com/norvig/paip-lisp">The Paradigms of Artificial Intelligence Programming</a>.</p>
 
@@ -650,8 +649,8 @@ The documentation provides the following syntax for patterns
 <p>The additional advantage of this practice is that it shows
   a symmetry between quasiquotation and pattern matching.</p>
 
-<p>In particular, it recommends to stick to the following subset
-  of the pattern grammar, that is compatible with both Racket
+<p>In particular, it recommends sticking to the following subset
+  of the pattern grammar, which is compatible with both Racket
   and Wright-Cartwright-Shinn matcher:</p>
 /
 <pre>
@@ -685,7 +684,7 @@ The documentation provides the following syntax for patterns
 
 <h2>Incompatible features should not be used</h2>
 
-<p>This document discourages the use of certain pattern matching
+<p>This document discourages the use of certain pattern-matching
   features, in particular:</p>
   <ul>
     <li>pattern guards</li>
@@ -699,7 +698,7 @@ The documentation provides the following syntax for patterns
   </ul>
 
 <p>More specifically, the uses of those extensions are obviously allowed,
-  but using them makes a program non-SRFI-###-compliant, and thus unportable
+  but using them makes a program non-SRFI-200-compliant, and thus unportable
   between different pattern matchers.</p>
 
 <h2>Implementations</h2>
@@ -736,7 +735,7 @@ The documentation provides the following syntax for patterns
 </p>
 
 <p>Lastly, one could use a simple reference implementation
-  provided by this SRFI. The main interface to the matcher the
+  provided by this SRFI. The main interface to the matcher is the
   <code>match</code> macro, which valuates the expression
   to be pattern-matched on, and passes the work to the
   <code>match/evaluated</code> macro:</p>
@@ -757,7 +756,7 @@ The documentation provides the following syntax for patterns
 (define-syntax match/evaluated
   (syntax-rules ()
     ((match/evaluated value)
-     ;; this behavior is unspecified, and an "unspecified"
+     ;; This behavior is unspecified, and an "unspecified"
      ;; value would also be fine here.
      (error 'no-matching-pattern))
 
@@ -789,7 +788,7 @@ The documentation provides the following syntax for patterns
 <p>When the <code>match-clause</code> encounters an identifier, then it extends
   the set of bindings with the current <code>path</code>.</p>
 
-<p>Otherwise when it encounters a literal value, it adds a check whether the
+<p>Otherwise, when it encounters a literal value, it adds a check whether the
   object at current <code>path</code> is <code>equal?</code> to that value.</p>
 
 <p>When the list is processed, then technically the macro could expand
