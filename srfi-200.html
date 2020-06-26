@@ -56,10 +56,10 @@ will not appear in the final SRFI.
   (cond ((and (list? x) (= (length x) 3) (eq? (car x) '+))
          (+ (cadr x) (caddr x)))
         (else
-         'operation-not-supported))  
+         'operation-not-supported))
 </pre>
 
-it is often more clear and concise to write 
+it is often more clear and concise to write
 
 <pre>
   (match x
@@ -752,7 +752,7 @@ The documentation provides the following syntax for patterns
   continuation of a <code>match-clause</code> macro. If there are no
   clauses left, it signals an error (which is an acceptable way
   of handling this situation, although not required):</p>
-  
+
 <pre>
 (define-syntax match/evaluated
   (syntax-rules ()
@@ -823,7 +823,7 @@ The documentation provides the following syntax for patterns
                        condition
                        bindings
                        actions ... alternative))
-      
+
       ((match-clause ((variable root) . rest)
                      condition
                      bindings
@@ -833,7 +833,7 @@ The documentation provides the following syntax for patterns
                        condition
                        ((variable root) . bindings)
                        actions ... alternative))
-      
+
       ((match-clause ((`(left . right) root) . rest)
                      (and conditions ...)
                      bindings
@@ -842,7 +842,7 @@ The documentation provides the following syntax for patterns
                        (and conditions ... (pair? root))
                        bindings
                        actions ... alternative))
-      
+
       ((match-clause ((literal root) . rest)
                      (and conditions ...)
                      bindings
@@ -875,8 +875,8 @@ The documentation provides the following syntax for patterns
        #'(if condition
              (let bindings actions ...)
              alternative))
-      
-      ((check/unique condition 
+
+      ((check/unique condition
                      ((variable path) . bindings)
                      #f
                      bindings/checked
