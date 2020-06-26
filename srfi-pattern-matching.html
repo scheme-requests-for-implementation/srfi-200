@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SRFI ?: Pattern Matching</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/srfi.css" type="text/css" />
+    <link href="/favicon.png" rel="icon" sizes="192x192" type="image/png" />
+  </head>
+
+  <body>
+
+<h1>Title</h1>
+
+Pattern Matching
+
+<h1>Author</h1>
+
+Panicz Maciej Godek
+
+<h1>Status</h1>
+
+??? the draft/final/withdrawn status of the SRFI, information on how
+to subscribe to its mailing list, and important dates in its history.
+The editor will add this section.
+
+<h1>Abstract</h1>
+
+<p>This SRFI discusses the most widespread existing pattern matching libraries
+  for the Scheme programming language - namely, the pattern matcher
+  presented by Andrew K. Wright and Robert Cartwright in the paper "A Soft
+  Type System for Scheme", the pattern matcher developed by Dan Friedman,
+  Erik Hilsdale and Kent Dybvig, and the <code>racket/match</code> module
+  distributed with the Racket programming environment.
+  It then extracts a pattern syntax which is compatible with two of
+  those implementations and provides extrinsic rationale for that syntax.
+  It also provides a simple implementation of a pattern matcher
+  which conforms to the specification of a pattern language provided
+  in this document.</p>
+
+<h1>Issues</h1>
+
+??? Optional section that may point out things to be resolved.  This
+will not appear in the final SRFI.
+
+<h1>Rationale</h1>
+
+<p>Pattern Matching is a technique of (conditionally) naming
+  components of compound data structures. It is commonly known
+  in the functional programming circles, and it has been adapted
+  to the Scheme programming language in the early 1990s.</p>
+
+<p>It also partially overlaps in its functionality with
+  the technique called <i>destructuring bind</i> known from Common Lisp.</p>
+
+<p>For example, instead of writing</p>
+
+<pre>
+  (cond ((and (list? x) (= (length x) 3) (eq? (car x) '+))
+         (+ (cadr x) (caddr x)))
+        (else
+         'operation-not-supported))  
+</pre>
+
+it is often more clear and concise to write 
+
+<pre>
+  (match x
+    (`(+ ,x ,y) (+ x y))
+    (_ 'operation-not-supported))
+</pre>
+
+<p>Today, there exist a few different implementations that offer
+  many extensions to the basic pattern matching facility, and that
+  are mutually incompatible with each other.</p>
+
+<p>The purpose to this SRFI is to codify the basic common features
+  that are present in all or most of those libraries, in order to
+  facilitate the development of portable programs that utilize
+  pattern matching.</p>
+
+<p>This document isn't meant to serve as a comprehensive documentation
+  for any of the discussed libraries, as they are already well documented
+  in their appropriate sources.</p>
+
+<p>It also provides a minimalist reference implementation expressed
+  in terms of simple <code>syntax-case</code> macros.</p>
+
+<h1>Specification</h1>
+
+<p>The main interface to using syntactic pattern matching is the same for
+  all libraries discussed in this document - namely, the <code>match</code>
+  macro, which is used in the following way:</p>
+<pre>
+  (match expression
+    (&lt;pattern-1&gt; &lt;actions-1*&gt; ... &lt;value-1&gt;)
+     ...
+    (&lt;pattern-N&gt; &lt;actions-N*&gt; ... &lt;value-N&gt;))
+</pre>
+
+<p>where <code>&lt;actions-<i>X</i>*&gt;</code> are optional sequences
+  of expressions.</p>
+
+<p>The <code>expression</code> is evaluated once and its value is
+  tested against the subsequent <code>&lt;pattern-<i>X</i>&gt;</code>
+  patterns. When the first matching pattern
+  <code>&lt;pattern-<i>K</i>&gt;</code> is encountered,
+  the sequence of <code>&lt;actions-K*&gt;</code> is executed,
+  and the value of the expression <code>&lt;value-K&gt;</code>
+  becomes the value of the whole <code>match</code> expression.</p>
+
+<p>The pattern may contain some variables (which are typically expressed
+  using unquoted symbols). If it does, then those variables become the
+  names of some parts of the data being pattern-matched, and the named
+  parts can be referred to from the <code>&lt;actions-K*&gt;</code>
+  and <code>&lt;value-K&gt;</code> expressions.</p>
+
+<p>If the data does not match any of the patterns, the result
+  of the expression depends on the pattern matcher under consideration:
+  it may be either an unspecified value, some specified value or an error.
+  However, since writing non-exhaustive patterns in <code>match</code>
+  expressions is generally considered a bad practice, this aspect of
+  the <code>match</code> form will not be further discussed in this
+  document.</p>
+
+<p>It is mainly the form, capabilities and the interpretation of the
+  <code>&lt;pattern-<i>X</i>&gt;</code> expressions
+  where the libraries differ.</p>
+
+<h2>The Wright-Cartwright-Shinn pattern matcher</h2>
+
+<p>Probably the most common pattern matching library distributed
+  with some popular Scheme implementations is the
+  <code><a href="http://synthcode.com/scheme/match.scm">match.scm</a></code>
+  module developed in portable <code>syntax-rules</code> macros based on
+  a specification developed by Andrew K. Wright and Robert
+  Cartwright in their paper,
+  <a href="https://www.iro.umontreal.ca/~feeley/cours/ift6232/doc/pres2/practical-soft-type-system-for-scheme.pdf">A Practical Soft Type System for Scheme</a>.</p>
+
+<p>It is available, for example, in Guile Scheme as the
+  <a href="https://www.gnu.org/software/guile/manual/html_node/Pattern-Matching.html"><code>(ice-9 match)</code></a>
+  module, or in Chicken Scheme as the
+  <a href="http://wiki.call-cc.org/eggref/4/matchable">matchable</a>
+  module.</p>
+
+<h3>Simple patterns</h3>
+
+<p>The <code>&lt;pattern-<i>X</i>&gt;</code> expressions are interpreted
+  in the following way: if a pattern is a literal, then it matches
+  the data that is equal to that literal. Otherwise, if it is a regular
+  unquoted symbol, then the match succeeds, and the symbol gets bound
+  to the value being pattern-matched. If the pattern is the special symbol
+  <code>_</code> (underscore), then the match succeeds, but the symbol
+  is not bound.</p>
+
+<h3>Compound patterns</h3>
+
+<p>Things become more interesting when the pattern is a pair, i.e.
+  when it has the form <code>(<i>head</i> . <i>tail</i>)</code>.
+  Roughly speaking, data matches such patterns if it is also a pair,
+  the head of the data matches the head of the pattern, and
+  the tail of the data matches the tail of the pattern. So for example,
+  the list <code>(1 2)</code> matches the pattern <code>(a b)</code>
+  (with <code>a</code> being bound to <code>1</code> and <code>b</code>
+  being bound to <code>2</code>, but it also matches the pattern
+  <code>(a . b)</code> (where <code>a</code> is bound to <code>1</code>
+  and <code>b</code> is bound to <code>(2)</code>).</p>
+
+<p>The same symbol can be used in a pattern more than once. When that's
+  the case, the pattern matches only if all the occurrences of that
+  symbol would be bound to values that are <code>equal?</code>: for
+  example, the pattern <code>(a . a)</code> matches the value
+  <code>(1 . 1)</code> or <code>((1) . (1))</code>, but it does
+  not match the value <code>(1 . 2)</code> or the value <code>(1 1)</code>.</p>
+
+<p>This allows to define a function that removes adjacent <code>equal?</code>
+  elements from a list in the following way:</p>
+
+<pre>
+  (define (unique elements)
+    (match elements
+      ((x x . rest)
+       (unique `(,x . ,rest)))
+      ((x . rest)
+       `(,x . ,(unique rest)))
+      (()
+       '())))
+</pre>
+
+<p>For example, <code>(unique '(a a a b b b b a a c c))</code> evaluates
+  to <code>(a b a c)</code>.</p>
+
+<p>An equivalent definition that does not use pattern matching would
+  look like this:</p>
+
+<pre>
+  (define (unique elements)
+    (cond ((null? elements)
+           '())
+          ((and (pair? elements)
+                (pair? (cdr elements))
+                (equal? (car elements)
+                        (cadr elements)))
+           (unique (cdr elements)))
+          (else
+           (cons (car elements)
+                 (unique (cdr elements))))))
+</pre>
+
+<h3>Compound literals and quasi-literals</h3>
+
+<p>The previous section claimed that a value matches the
+  <code>(<i>head</i> . <i>tail</i>)</code> pattern only if it is
+  a pair and the head and the tail of the data matches the head
+  and the tail of the pattern.</p>
+
+<p>This is true in most circumstances. However, there are a few
+  exceptions. Notably, if the pattern is a pair and its head is the
+  <code>quote</code> symbol, then the data matches the pattern only
+  if it is <code>equal?</code> to the tail of the pattern. For example,
+  the symbol <code>'x</code> matches the pattern <code>'x</code>
+  and the value of the expression <code>(list 1 2 3)</code> matches
+  the pattern <code>(quote (1 2 3))</code>, or equivalently
+  <code>'(1 2 3)</code>.</p>
+
+<p>More interestingly, if the head of the pattern is the symbol
+  <code>quasiquote</code>, then the pattern behaves similarly
+  to quasi-quotation, attributing special meaning to the <code>unquote</code>
+  symbol. In particular, this allows to express
+  the above definition of the function <code>unique</code>
+  as:</p>
+
+<pre>
+  (define (unique elements)
+    (match elements
+      (`(,x ,x . ,rest)
+       (unique `(,x . ,rest)))
+      (`(,x . ,rest)
+       `(,x . ,(unique rest)))
+      ('()
+       '())))
+</pre>
+
+<p>This feature exposes symmetry between pattern matching
+  and quasi-quotation. However, the <code>unquote-splicing</code>
+  operator is not implemented in the Wright-Cartwright-Shinn matcher.</p>
+
+<h3>Predicates</h3>
+
+<p>The Wright-Cartwright-Shinn pattern matcher also offers a special syntax for
+  testing whether a given sub-pattern satisfies a certain predicate:
+  if a pattern is a list whose first element is the <code>?</code>
+  (question mark) symbol, then the second element of that list must
+  be a unary predicate. The pattern matches if the predicate is
+  satisfied.</p>
+
+<p>Optionally, there may be a third element in the list. It is
+  an additional pattern that needs to be satisfied by the datum.
+  It is typically used for naming the element that satisfies
+  the predicate.</p>
+
+<h3>Ellipsis</h3>
+
+<p>Even though the Wright-Cartwright-Shinn pattern matcher does not support
+  the <code>unquote-splicing</code> operator, it provides
+  the <code>...</code> (ellipsis) operator which behaves similarly
+  to the one that can be found in the <code>syntax-rules</code>
+  pattern language.</p>
+
+<p>The <code>...</code> operator must appear in a list, following
+  a pattern, but no more than one ellipsis is allowed to appear
+  at a single level of nesting. The behavior of the operator is
+  best illustrated with an example - the <code>palindrome?</code>
+  predicate which evaluates to <code>#true</code> iff its argument
+  is a list <code>equal?</code> to its own reverse:</p>
+
+<pre>
+  (define (palindrome? list)
+    (match list
+      (()          #true)
+      ((x)         #true)
+      ((a b ... a) (palindrome? b))
+      (_           #false)))
+</pre>
+
+<p>If <code>list</code> is <code>(1 2 3 2 1)</code>, then the
+  first invocation of <code>palindrome?</code> will match the
+  <code>(a b ... a)</code> pattern, binding <code>a</code> to
+  1 and <code>b</code> to the list <code>(2 3 2)</code>.</p>
+
+<p>The ellipsis operator can also be used with more complex patterns.
+  For example, the expression</p>
+
+<pre>
+  (match '((a 1) (b 2) (c 3))
+    (((s n) ...) `(,s ,n)))
+</pre>
+
+<p>evaluates to <code>((a b c)(1 2 3))</code>.</p>
+
+<p>The ellipsis operator can be nested, so the pattern
+  <code>((x ...) ...)</code> is also valid, even if difficult
+  to substantiate.</p>
+
+<h3>Boolean combinations</h3>
+
+<p>The Wright-Cartwright-Shinn matcher also allows to combine patterns using
+  Boolean operators: <code>(and pat-1 ... pat-n)</code> matches
+  if a given object matches all of the <code>pat-1 ... pat-n</code>
+  patterns, <code>(or pat-1 ... pat-n)</code> matches if a given object
+  matches any of the <code>pat-1 ... pat-n</code> patterns,
+  and <code>(not pat-1 ... pat-n)</code> matches if an object does not match
+  any of <code>pat-1 ... pat-n</code> patterns.</p>
+
+<h3>The complete grammar for the Wright-Cartwright-Shinn matcher</h3>
+
+<p>The specification of the Wright-Cartwright-Shinn pattern matcher provides
+the following grammar:</p>
+
+<pre>        patterns:                       matches:
+
+  pat ::= identifier                      anything, and binds identifier
+        | _                               anything
+        | ()                              the empty list
+        | #t                              #t
+        | #f                              #f
+        | string                          a string
+        | number                          a number
+        | character                       a character
+        | 'sexp                           an s-expression
+        | 'symbol                         a symbol (special case of s-expr)
+        | (pat_1 ... pat_n)               list of n elements
+        | (pat_1 ... pat_n . pat_{n+1})   list of n or more
+        | (pat_1 ... pat_n pat_n+1 ooo)   list of n or more, each element
+                                          of remainder must match pat_n+1
+        | #(pat_1 ... pat_n)              vector of n elements
+        | #(pat_1 ... pat_n pat_n+1 ooo)  vector of n or more, each element
+                                          of remainder must match pat_n+1
+        | #&amp;pat                           box
+        | ($ record-name pat_1 ... pat_n) a record
+        | (= field pat)                   a ``field'' of an object
+        | (and pat_1 ... pat_n)           if all of pat_1 thru pat_n match
+        | (or pat_1 ... pat_n)            if any of pat_1 thru pat_n match
+        | (not pat_1 ... pat_n)           if all pat_1 thru pat_n don't match
+        | (? predicate pat_1 ... pat_n)   if predicate true and all of
+                                          pat_1 thru pat_n match
+        | (set! identifier)               anything, and binds setter
+        | (get! identifier)               anything, and binds getter
+        | `qp                             a quasi-pattern
+        | (identifier *** pat)            matches pat in a tree and binds
+        identifier to the path leading
+        to the object that matches pat
+
+  ooo ::= ...                             zero or more
+        | ___                             zero or more
+        | ..1                             1 or more
+
+  quasi-patterns:                 matches:
+
+  qp  ::= ()                              the empty list
+        | #t                              #t
+        | #f                              #f
+        | string                          a string
+        | number                          a number
+        | character                       a character
+        | identifier                      a symbol
+        | (qp_1 ... qp_n)                 list of n elements
+        | (qp_1 ... qp_n . qp_{n+1})      list of n or more
+        | (qp_1 ... qp_n qp_n+1 ooo)      list of n or more, each element
+                                          of remainder must match qp_n+1
+        | #(qp_1 ... qp_n)                vector of n elements
+        | #(qp_1 ... qp_n qp_n+1 ooo)     vector of n or more, each element
+                                          of remainder must match qp_n+1
+        | #&amp;qp                            box
+        | ,pat                            a pattern
+        | ,@pat                           a pattern
+</pre>
+
+<h2>The Racket pattern matcher</h2>
+
+The Racket pattern matcher is typically shipped with the distribution
+of Racket. In order to use it, one needs to <code>(require racket/match)</code>
+in their Racket program. It can also be found in the
+<a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's Github repository</a>.
+
+<h3>Simple patterns</h3>
+
+<p>The rules for simple patterns in the Racket pattern matcher are identical
+  with those described above for the Wright-Cartwright-Shinn pattern matcher: literals
+  match literals, symbols match and bind to anything, and the special symbol
+  <code>_</code> (underscore) matches anything but binds to nothing.</p>
+
+<h3>Compound patterns</h3>
+
+<p>The rules for compound patterns in the Racket pattern matcher differ
+  significantly compared to the compound patterns found in the Wright-Cartwright-Shinn
+  matcher. In particular, compound patterns must be proper lists, and
+  their first element must always be a special symbol understandable
+  by the matcher. For example, if we want to match a pair <code>(a . b)</code>,
+  we need to use the pattern <code>(cons a b)</code>; if we want to
+  match a list <code>(a b)</code>, we need to use the pattern
+  <code>(list a b)</code> and so forth.</p>
+
+<p>Therefore, the <code>unique</code> function defined in the previous
+  section could be translated to the Racket's pattern language in the
+  following way:</p>
+
+<pre>
+  (define (unique elements)
+    (match elements
+      ((list-rest x x rest)
+       (unique (cons x rest)))
+      ((cons x rest)
+       (cons x (unique rest)))
+      ('()
+       '())))
+</pre>
+
+<p>Overall, the <a href="https://docs.racket-lang.org/reference/match.html">documentation of Racket</a> provides a detailed list
+  of symbols that are allowed in the head position of compound
+  patterns.</p>
+
+<h3>The complete grammar for the Racket pattern matcher</h3>
+
+<pre>
+  pat     ::= id                                match anything, bind identifier
+           |  (var id)                          match anything, bind identifier
+           |  _                                 match anything
+           |  literal                           match literal
+           |  (quote datum)                     match equal? value
+           |  (list lvp ...)                    match sequence of lvps
+           |  (list-rest lvp ... pat)           match lvps consed onto a pat
+           |  (list-no-order pat ...)           match pats in any order
+           |  (list-no-order pat ... lvp)       match pats in any order
+           |  (vector lvp ...)                  match vector of pats
+           |  (hash-table (pat pat) ...)        match hash table
+           |  (hash-table (pat pat) ...+ ooo)   match hash table
+           |  (cons pat pat)                    match pair of pats
+           |  (mcons pat pat)                   match mutable pair of pats
+           |  (box pat)                         match boxed pat
+           |  (struct-id pat ...)               match struct-id instance
+           |  (struct struct-id (pat ...))      match struct-id instance
+           |  (regexp rx-expr)                  match string
+           |  (regexp rx-expr pat)              match string, result with pat
+           |  (pregexp px-expr)                 match string
+           |  (pregexp px-expr pat )            match string, result with pat
+           |  (and pat ...)                     match when all pats match
+           |  (or pat ...)                      match when any pat match
+           |  (not pat ...)                     match when no pat matches
+           |  (app expr pats ...)               match (expr value) output values to pats
+           |  (? expr pat ...)                  match if (expr value) and pats
+           |  (quasiquote qp)                   match a quasipattern
+           |  derived-pattern                   match using extension
+
+  literal ::= #t                                match true
+           |  #f                                match false
+           |  string                            match equal? string
+           |  bytes                             match equal? byte string
+           |  number                            match equal? number
+           |  char                              match equal? character
+           |  keyword                           match equal? keyword
+           |  regexp literal                    match equal? regexp literal
+           |  pregexp literal                   match equal? pregexp literal
+
+  lvp     ::= (code:line pat ooo)               greedily match pat instances
+           |  pat                               match pat
+
+  qp      ::= literal                           match literal
+           |  id                                match symbol
+           |  (qp ...)                          match sequences of qps
+           |  (qp ... . qp)                     match qps ending qp
+           |  (qp ooo . qp)                     match qps beginning with repeated qp
+           |  #(qp ...)                         match vector of qps
+           |  #&amp;qp                              match boxed qp
+           |  #s(prefab-key qp ...)             match prefab struct with qp fields
+           |  ,pat                              match pat
+           |  ,(list lvp ...)                   match lvps, spliced
+           |  ,(list-rest lvp ... pat)          match lvps plus pat, spliced
+           |  ,'qp                              match list-matching qp, spliced
+
+  ooo     ::= ...                               zero or more; ... is literal
+           |  ___                               zero or more
+           |  ..k                               k or more
+           |  __k                               k or more
+</pre>
+
+<p>A closer look at the rules reveals that some of the symbols allowed
+  in patterns coincide with the ones in the Wright-Cartwright-Shinn matcher. In particular,
+  <code>quote</code>, <code>and</code>, <code>or</code>, <code>not</code>,
+  <code>?</code>, and <code>quasiquote</code>.</p>
+
+<h3>Pattern guards</h3>
+
+<p>The Racket matcher also supports the feature known as <i>pattern guards</i>.
+  A pattern guard is an additional condition which needs to be satisfied
+  in order for a match to be considered successful.</p>
+
+<p>In Racket, pattern guards are expressed using the <code>#:when</code>
+  keyword following a pattern, followed by the condition. For example:</p>
+
+<pre>
+  (match '(1 2)
+    (`(,a ,b) #:when (odd? (+ a b)) 'odd-sum)
+    (_ 'unknown))
+</pre>
+
+<h3>Derived patterns</h3>
+
+<p>The distinctive feature of the Racket matcher is the ability to provide
+  <i>derived patterns</i>. In addition to the <code>match</code> form,
+  Racket provides the <code>define-match-expander</code> extension mechanism,
+  which allows to define new types of patterns.</p>
+
+<h2>The Friedman-Hilsdale-Dybvig pattern matcher</h2>
+
+<p>A copy of the pattern matcher developed at Indiana University by
+  Dan Friedman, Erik Hilsdale and Kent Dybvig can be found
+  on <a href="https://github.com/guenchi/match">Github</a>.</p>
+
+<p>The basic syntax of this pattern matcher is similar to the syntax
+  of the Wright-Cartwright-Shinn matcher, the key difference being that
+  in the case of Friedman-Hilsdale-Dybvig matcher, the patterns are <i>implicitly
+  quasi-quoted</i>.</p>
+
+<p>This means, that in order to transform the basic patterns
+  of the Friedman-Hilsdale-Dybvig matcher to the Wright-Cartwright-Shinn matcher,
+  one needs to wrap each pattern in a <code>quasiquote</code>. In other
+  words, assuming that the Wright-Cartwright-Shinn matcher is available
+  under the <code>match/WCS</code> binding, then the basic syntax of
+  the Friedman-Hilsdale-Dybvig matcher can be achieved via the following
+  transformation:</p>
+
+<pre>
+  (define-syntax match/FHD
+    (syntax-rules ()
+      ((match/FHD (pattern . body) ...)
+       (match/WCS ((quasiquote pattern) . body) ...))))
+</pre>
+
+<p>Consequently, the definition of the <code>unique</code> function
+  would take the following form under the Friedman-Hilsdale-Dybvig match
+  syntax (note the lack of back-ticks):</p>
+
+<pre>
+  (define (unique elements)
+    (match elements
+      ((,x ,x . ,rest)
+       (unique `(,x . ,rest)))
+      ((,x . ,rest)
+       `(,x . ,(unique rest)))
+      (()
+       '())))
+</pre>
+
+<p>Similarly, if the Friedman-Hilsdale-Dybvig matcher is available under
+  the <code>match/WCS</code> binding, then we can obtain the subset of
+  Wright-Cartwright-Shinn patterns that begin with <code>quasiquote</code>
+  via the following transformation:</p>
+
+<pre>
+  (define-syntax match/WCS
+    (syntax-rules (quasiquote)
+      ((match/WCS ((quasiquote pattern) . body) ...)
+       (match/FHD (pattern . body) ...))))
+</pre>
+
+<p>Of course, this only works for basic patterns, and doesn't include
+  extensions like predicates or Boolean combinations.</p>
+
+<p>It is worth to note that the same basic quasiquotation patterns are also
+  supported by the Racket pattern matcher.</p>
+
+<h3>Pattern guards</h3>
+
+<p>Similarly to the Racket's matcher, the Friedman-Hilsdale-Dybvig matcher
+  supports pattern guards. However, it does not require the <code>#:when</code>
+  keyword. Instead, it assumes that there are no <code>&lt;actions-X*&gt;</code>
+  forms, and that a clause for the <code>match</code> macro can either have
+  the form</p>
+
+<pre>
+  (&lt;pattern&gt; &lt;value&gt;)
+</pre>
+
+or
+
+<pre>
+  (&lt;pattern&gt; &lt;guard&gt; &lt;value&gt;)
+</pre>
+
+<h3>Grammar rules for the Friedman-Hilsdale-Dybvig matcher</h3>
+
+The documentation provides the following syntax for patterns
+
+<pre>
+  Pat    ::= (Pat ... . Pat)
+           | (Pat . Pat)
+           | ()
+           | #(Pat* Pat ... Pat*)
+           | #(Pat*)
+           | ,Id
+           | ,[Id*]
+           | ,[Cata -> Id*]
+           | Id
+</pre>
+
+<h2>Other pattern matching libraries</h2>
+
+<h3>The <code>syntax-case</code>/<code>syntax-rules</code> pattern language</h3>
+
+<p>Apart from the libraries discussed in this document, the core Scheme language
+  already provides some pattern matching capabilities, namely the
+  <code>syntax-rules</code>/<code>syntax-case</code> pattern language.</p>
+
+<p>Unfortunately, the applicability of this language is limited to macro
+  definitions. This limitation is hurtful to the souls of those Scheme
+  programmers who are in love with minimalism, as it requires the duplication
+  of the same feature in different context. However, fixing that flaw
+  is beyond the scope of this document.</p>
+
+<h3>Structural pattern matching</h3>
+
+<p>This document focuses on libraries which extend the syntax of Scheme
+  with pattern matching capabilities. It is perhaps worth to mention,
+  that the term "pattern matching" is also sometimes being used in a slightly
+  different sense: not as a syntactic extension to a language, but as a function
+  that takes an s-expression representing a pattern and some object, and returns
+  a list of bindings (for example, in the form of an association list) that
+  could turn a pattern into that object.</p>
+
+<p>This kind of a pattern matching library has been described, for example,
+  in the <a href="https://github.com/norvig/paip-lisp/blob/master/docs/chapter5.md">fifth chapter</a> of Peter Norvig's book
+  <a href="https://github.com/norvig/paip-lisp">The Paradigms of Artificial Intelligence Programming</a>.</p>
+
+<h1>Recommendations</h1>
+
+<p>Since pattern matching is a feature that has already been widely adapted
+  by various Scheme communities, this document does not attempt to subvert
+  this adaption. Instead, it aims at providing recommendations for writing
+  future Scheme code that maximizes compatibility between the existing pattern
+  matchers.</p>
+
+<h2>Quasi-quotation is the preferred way of expressing patterns</h2>
+
+<p>It has been noted that compound patterns that begin with quasiquote
+  are compatible between the Wright-Cartwright-Shinn matcher and
+  the Racket matcher, and that the Friedman-Hilsdale-Dybvig matcher
+  can trivially be adapted to make quasiquotations explicit.</p>
+
+<p>For this reason, this document recommends that the compound
+  patterns are expressed using explicit quasiquotation. </p>
+
+<p>The additional advantage of this practice is that it shows
+  a symmetry between quasiquotation and pattern matching.</p>
+
+<p>In particular, it recommends to stick to the following subset
+  of the pattern grammar, that is compatible with both Racket
+  and Wright-Cartwright-Shinn matcher:</p>
+/
+<pre>
+  pat ::= identifier                      anything, and binds identifier
+        | _                               anything
+        | ()                              the empty list
+        | #t                              #t
+        | #f                              #f
+        | string                          a string
+        | number                          a number
+        | character                       a character
+        | 'sexp                           an s-expression
+        | 'symbol                         a symbol (special case of s-expr)
+        | `qp                             a quasi-pattern
+
+  quasi-patterns:                 matches:
+
+  qp  ::= ()                              the empty list
+        | #t                              #t
+        | #f                              #f
+        | string                          a string
+        | number                          a number
+        | character                       a character
+        | identifier                      a symbol
+        | (qp_1 ... qp_n)                 list of n elements
+        | (qp_1 ... qp_n . qp_{n+1})      list of n or more
+                                          of remainder must match qp_n+1
+        | ,pat                            a pattern
+
+</pre>
+
+<h2>Incompatible features should not be used</h2>
+
+<p>This document discourages the use of certain pattern matching
+  features, in particular:
+  <ul>
+    <li>pattern guards</li>
+    <li>ellipses</li>
+    <li>Boolean combinations (<code>and</code>, <code>or</code>,
+      <code>not</code>)</li>
+    <li>predicates</li>
+    <li>derived patterns</li>
+    <li>catamorphism</li>
+    <li>other extensions</li>
+  </ul>
+</p>
+
+<p>More specifically, the uses of those extensions are obviously allowed,
+  but using them makes a program non-SRFI-###-compliant, and thus unportable
+  between different pattern matchers.</p>
+
+<h1>Implementations</h1>
+
+<p>Two of the three pattern matchers presented here already support the pattern
+  language recommended by this SRFI.</p>
+
+<p>
+  The Wright-Cartwright-Shinn pattern matcher implemented in terms of <code>syntax-rules</code>
+  macros is available from <a href="http://synthcode.com/scheme/match.scm">Alex Shinn's website</a>.</p>
+
+<p>
+  The Racket pattern matcher is distributed with Racket, and is available from
+  <a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's Github repository</a>.
+</p>
+
+<p>The Friedman-Hilsdale-Dybvig matcher can be adapted to the pattern language
+  by defining a macro <code>match<sub>WCS</sub></code></p>
+
+<pre>
+  (define-syntax match<sub>WCS</sub>
+    (syntax-rules (quasiquote)
+      ((_ ((quasiquote pattern) . body) ...)
+       (match (pattern . body) ...))))
+</pre>
+
+<p>and re-exporting it to shadow the <code>match</code> binding provided by
+  the Friedman-Hilsdale-Dybvig matcher.</p>
+
+<p>
+  A copy of the pattern matcher developed at Indiana University by
+  Dan Friedman, Erik Hilsdale and Kent Dybvig can be found
+  on <a href="https://github.com/guenchi/match">Github</a>.
+</p>
+
+<p>Lastly, one could use a simple reference implementation
+  provided by this SRFI. The main interface to the matcher the
+  <code>match</code> macro, which valuates the expression
+  to be pattern-matched on, and passes the work to the
+  <code>match/evaluated</code> macro:</p>
+
+<pre>
+(define-syntax-rule (match expression (pattern actions* ... value) ...)
+  (let ((evaluated expression))
+    (match/evaluated evaluated (pattern actions* ... value) ...)))
+</pre>
+
+<p>The <code>match/evaluated</code> macro analyzes the first clause
+  and passes itself recursively on the remaining clauses to the failure
+  continuation of a <code>match-clause</code> macro. If there are no
+  clauses left, it signals an error (which is an acceptable way
+  of handling this situation, although not required):</p>
+  
+<pre>
+(define-syntax match/evaluated
+  (syntax-rules ()
+    ((match/evaluated value)
+     ;; this behavior is unspecified, and an "unspecified"
+     ;; value would also be fine here.
+     (error 'no-matching-pattern))
+
+    ((match/evaluated value (pattern actions ...) . clauses)
+     (match-clause ((pattern value))
+                   (and)
+                   ()
+                   actions ...
+                   (match/evaluated value . clauses)))))
+</pre>
+
+<p>The <code>match-clause</code> macro is responsible for converting the
+  pattern into a <code>condition</code> (which is a conjunction of all conditions
+  stemming from the pattern's sub-patterns) and <code>bindings</code>.</p>
+
+<p>It maintains (and processes) a list of <code>(pattern path)</code> pair,
+  where <code>path</code> is an expression consisting of nested <code>car</code>s
+  and <code>cdr</code>s leading to the (evaluated) expression being pattern-matched.</p>
+
+<p>It also carries around the set of <code>actions</code> to be performed when
+  the match succeeds, as well as the form to be evaluated when it does not succeed.</p>
+
+<p>When the <code>match-clause</code> encounters a nested pattern, i.e. a pair
+  consisting of <code>left</code> and <code>right</code> sub-patterns, it extends
+  the <code>condition</code> with the requirement that the current target
+  is a <code>pair?</code>, and it expands the list with the <code>left</code>
+  and <code>right</code> sub-patterns.</p>
+
+<p>When the <code>match-clause</code> encounters an identifier, then it extends
+  the set of bindings with the current <code>path</code>.</p>
+
+<p>Otherwise when it encounters a literal value, it adds a check whether the
+  object at current <code>path</code> is <code>equal?</code> to that value.</p>
+
+<p>When the list is processed, then technically the macro could expand
+  to the form <code>(if condition (let bindings actions ...) alternative)</code>, but
+  since the matcher should handle repeated identifiers (with the requirement
+  that they all point to fragments of data that is <code>equal?</code>),
+  it expands to the <code>check/unique</code> macro, whose responsibility is
+  to add necessary equality checks, and remove bindings with duplicate identifiers.</p>
+
+<pre>
+(define-syntax match-clause
+  (lambda (stx)
+    (syntax-case stx (quasiquote unquote and _)
+      ((match-clause () condition bindings actions ... alternative)
+       #'(check/unique condition bindings #f () () actions ... alternative))
+
+      ((match-clause ((`,pattern root) . rest)
+                     condition
+                     bindings
+                     actions ... alternative)
+       #'(match-clause ((pattern root) . rest)
+                       condition
+                       bindings
+                       actions ... alternative))
+
+      ((match-clause ((_ root) . rest)
+                     condition
+                     bindings
+                     actions ... alternative)
+       #'(match-clause rest
+                       condition
+                       bindings
+                       actions ... alternative))
+      
+      ((match-clause ((variable root) . rest)
+                     condition
+                     bindings
+                     actions ... alternative)
+       (identifier? #'variable)
+       #'(match-clause rest
+                       condition
+                       ((variable root) . bindings)
+                       actions ... alternative))
+      
+      ((match-clause ((`(left . right) root) . rest)
+                     (and conditions ...)
+                     bindings
+                     actions ... alternative)
+       #'(match-clause ((`left (car root)) (`right (cdr root)) . rest)
+                       (and conditions ... (pair? root))
+                       bindings
+                       actions ... alternative))
+      
+      ((match-clause ((literal root) . rest)
+                     (and conditions ...)
+                     bindings
+                     actions ...)
+       #'(match-clause rest
+                       (and conditions ... (equal? literal root))
+                       bindings
+                       actions ...))
+      )))
+</pre>
+
+<p>As mentioned earlier, the <code>check/unique</code> macro is responsible
+  for extending <code>condition</code> with equality checks if there is more
+  than one instance of a given identifier, and to remove <code>bindings</code>
+  with duplicate identifiers.</p>
+
+<p>In addition to <code>bindings</code>, it maintains a currently processed
+  <code>(variable path)</code> binding (or the <code>#f</code> value in the
+  edge cases), a list called <code>bindings/checked</code>, consisting of
+  all bindings that didn't contain the identifier currently being processed,
+  and a list <code>bindings/final</code>, consisting of all bindings that
+  were already tested against duplicates.</p>
+
+<pre>
+(define-syntax check/unique
+  (lambda (stx)
+    "add equality checks for repeated identifiers in patterns and remove them from bindings"
+    (syntax-case stx (and)
+      ((check/unique condition () #f () bindings actions ... alternative)
+       #'(if condition
+             (let bindings actions ...)
+             alternative))
+      
+      ((check/unique condition 
+                     ((variable path) . bindings)
+                     #f
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       #'(check/unique condition
+                       bindings
+                       (variable path)
+                       bindings/checked
+                       bindings/final
+                       actions ... alternative))
+
+      ((check/unique (and conditions ...)
+                     ((variable path) . bindings)
+                     (variable+ path+)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       (bound-identifier=? #'variable #'variable+)
+       #'(check/unique (and conditions ... (equal? path path+))
+                       bindings
+                       (variable+ path+)
+                       bindings/checked
+                       bindings/final
+                       actions ... alternative))
+
+      ((check/unique conditions
+                     ((variable path) . bindings)
+                     (variable+ path+)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       #'(check/unique conditions
+                       bindings
+                       (variable+ path+)
+                       ((variable path) . bindings/checked)
+                       bindings/final
+                       actions ... alternative))
+
+      ((check/unique conditions
+                     ()
+                     (variable path)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       #'(check/unique conditions
+                       bindings/checked
+                       #f
+                       ()
+                       ((variable path) . bindings/final)
+                       actions ... alternative))
+      )))
+</pre>
+
+<h1>Acknowledgements</h1>
+
+??? credit where it is due
+
+<h1>Copyright</h1>
+Copyright &copy; Panicz Maciej Godek (2020).
+
+<p>
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+<p>
+  The above copyright notice and this permission notice (including the
+  next paragraph) shall be included in all copies or substantial
+  portions of the Software.
+<p>
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  <hr>
+  <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address></body></html>
