@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>SRFI ?: Pattern Matching</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/srfi.css" type="text/css" />
-    <link href="/favicon.png" rel="icon" sizes="192x192" type="image/png" />
-  </head>
-
+    <meta charset="utf-8">
+    <title>SRFI 200: Pattern Matching</title>
+    <link href="favicon.png" rel="icon" sizes="192x192" type="image/png">
+    <link rel="stylesheet" href="/srfi.css" type="text/css">
+    <meta name="viewport" content="width=device-width, initial-scale=1"></head>
   <body>
+    <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI logo" /></a>200: Pattern Matching</h1>
 
-<h1>Title</h1>
+<p>by Panicz Maciej Godek</p>
 
-Pattern Matching
-
-<h1>Author</h1>
+<h2>Author</h2>
 
 Panicz Maciej Godek
 
-<h1>Status</h1>
+<h2>Status</h2>
 
 ??? the draft/final/withdrawn status of the SRFI, information on how
 to subscribe to its mailing list, and important dates in its history.
 The editor will add this section.
 
-<h1>Abstract</h1>
+<h2>Abstract</h2>
 
 <p>This SRFI discusses the most widespread existing pattern matching libraries
   for the Scheme programming language - namely, the pattern matcher
@@ -38,12 +35,12 @@ The editor will add this section.
   which conforms to the specification of a pattern language provided
   in this document.</p>
 
-<h1>Issues</h1>
+<h2>Issues</h2>
 
 ??? Optional section that may point out things to be resolved.  This
 will not appear in the final SRFI.
 
-<h1>Rationale</h1>
+<h2>Rationale</h2>
 
 <p>Pattern Matching is a technique of (conditionally) naming
   components of compound data structures. It is commonly known
@@ -86,7 +83,7 @@ it is often more clear and concise to write
 <p>It also provides a minimalist reference implementation expressed
   in terms of simple <code>syntax-case</code> macros.</p>
 
-<h1>Specification</h1>
+<h2>Specification</h2>
 
 <p>The main interface to using syntactic pattern matching is the same for
   all libraries discussed in this document - namely, the <code>match</code>
@@ -632,7 +629,7 @@ The documentation provides the following syntax for patterns
   in the <a href="https://github.com/norvig/paip-lisp/blob/master/docs/chapter5.md">fifth chapter</a> of Peter Norvig's book
   <a href="https://github.com/norvig/paip-lisp">The Paradigms of Artificial Intelligence Programming</a>.</p>
 
-<h1>Recommendations</h1>
+<h2>Recommendations</h2>
 
 <p>Since pattern matching is a feature that has already been widely adapted
   by various Scheme communities, this document does not attempt to subvert
@@ -706,7 +703,7 @@ The documentation provides the following syntax for patterns
   but using them makes a program non-SRFI-###-compliant, and thus unportable
   between different pattern matchers.</p>
 
-<h1>Implementations</h1>
+<h2>Implementations</h2>
 
 <p>Two of the three pattern matchers presented here already support the pattern
   language recommended by this SRFI.</p>
@@ -935,11 +932,11 @@ The documentation provides the following syntax for patterns
       )))
 </pre>
 
-<h1>Acknowledgements</h1>
+<h2>Acknowledgements</h2>
 
 ??? credit where it is due
 
-<h1>Copyright</h1>
+<h2>Copyright</h2>
 Copyright &copy; Panicz Maciej Godek (2020).
 
 <p>
