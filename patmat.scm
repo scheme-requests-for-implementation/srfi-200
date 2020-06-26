@@ -6,8 +6,8 @@
        #'(if condition
              (let bindings actions ...)
              alternative))
-      
-      ((check/unique condition 
+
+      ((check/unique condition
                      ((variable path) . bindings)
                      #f
                      bindings/checked
@@ -84,7 +84,7 @@
                        condition
                        bindings
                        actions ... alternative))
-      
+
       ((match-clause ((variable root) . rest)
                      condition
                      bindings
@@ -94,7 +94,7 @@
                        condition
                        ((variable root) . bindings)
                        actions ... alternative))
-      
+
       ((match-clause ((`(left . right) root) . rest)
                      (and conditions ...)
                      bindings
@@ -103,7 +103,7 @@
                        (and conditions ... (pair? root))
                        bindings
                        actions ... alternative))
-      
+
       ((match-clause ((literal root) . rest)
                      (and conditions ...)
                      bindings
