@@ -22,14 +22,18 @@
 
 <h2>Abstract</h2>
 
-<p>This SRFI discusses the most widespread existing pattern-matching libraries
-  for the Scheme programming language &mdash; namely, the pattern matcher
-  presented by Andrew K. Wright and Robert Cartwright in the paper "A Soft
-  Type System for Scheme", the pattern matcher developed by Dan Friedman,
-  Erik Hilsdale and Kent Dybvig, and the <code>racket/match</code> module
-  distributed with the Racket programming environment.
+<p>This SRFI discusses some of the existing pattern-matching
+  libraries for the Scheme programming language &mdash; namely,
+  the pattern matcher presented by Andrew K. Wright and Robert
+  Cartwright in the paper "A Soft Type System for Scheme", the
+  pattern matcher developed by Dan Friedman, Erik Hilsdale and
+  Kent Dybvig, the <code>racket/match</code> module
+  distributed with the Racket programming environment, as well
+  as the Bigloo and Gerbil pattern matchers distributed with
+  their respective implementations.
   It then extracts a pattern syntax which is compatible with two of
-  those implementations and provides extrinsic rationale for that syntax.
+  those implementations and provides extrinsic rationale for that
+  syntax.
   It also provides a simple implementation of a pattern matcher
   which conforms to the specification of a pattern language provided
   in this document.</p>
@@ -75,17 +79,19 @@ it is often more clear and concise to write
   pattern matching.</p>
 
 <p>This document isn't meant to serve as comprehensive documentation
-  for any of the discussed libraries, as they are already well documented
-  in their appropriate sources.</p>
+  for any of the discussed libraries, as they are already well
+  documented in their appropriate sources.</p>
 
-<p>It also provides a minimalist reference implementation expressed
-  in terms of simple <code>syntax-case</code> macros.</p>
+<p>It does, however, provide a minimalist reference implementation
+  expressed in terms of simple <code>syntax-case</code> macros,
+  and an equivalent implementation expressed in terms of
+  <code>syntax-rules</code> macros.</p>
 
 <h2>Specification</h2>
 
-<p>The main interface to using syntactic pattern matching is the same for
-  all libraries discussed in this document &mdash; namely, the <code>match</code>
-  macro, which is used in the following way:</p>
+<p>The main interface to using syntactic pattern matching is the
+  same for all libraries discussed in this document &mdash; namely,
+  the <code>match</code> macro, which is used in the following way:</p>
 <pre>
   (match expression
     (&lt;pattern-1&gt; &lt;actions-1*&gt; ... &lt;value-1&gt;)
@@ -127,14 +133,19 @@ it is often more clear and concise to write
 <p>Probably the most common pattern-matching library distributed
   with some popular Scheme implementations is the
   <code><a href="http://synthcode.com/scheme/match.scm">match.scm</a></code>
-  module developed in portable <code>syntax-rules</code> macros.  It is based on
-  a specification developed by Andrew K. Wright and Robert
-  Cartwright in their paper
+  module developed by Alex Shinn in portable <code>syntax-rules</code> macros.  It is based on a specification developed by Andrew K. Wright
+  and Robert Cartwright in their paper
   <a href="https://www.iro.umontreal.ca/~feeley/cours/ift6232/doc/pres2/practical-soft-type-system-for-scheme.pdf">A Practical Soft Type System for Scheme</a>.</p>
 
-<p>It is available, for example, in Guile Scheme as the
-  <a href="https://www.gnu.org/software/guile/manual/html_node/Pattern-Matching.html"><code>(ice-9 match)</code></a>
-  module, and in Chicken Scheme as the
+<p>It is distributed along with many Scheme implementations, including
+  Chibi (the <a href="http://synthcode.com/scheme/chibi/lib/chibi/match.html"><code>(chibi match)</code></a> module),
+  Guile (the <a href="https://www.gnu.org/software/guile/manual/html_node/Pattern-Matching.html"><code>(ice-9 match)</code></a> module),
+  Cyclone (the <a href="http://justinethier.github.io/cyclone/docs/api/cyclone/match"><code>(cyclone match)</code></a> module),
+  LispKit (the <a href="https://github.com/objecthub/swift-lispkit/blob/master/Sources/LispKit/Resources/Libraries/lispkit/match.sld"><code>match.sld</code></a> file),
+  Loko (the <a href="https://gitlab.com/weinholt/loko/-/blob/master/lib/match.sls"><code>match.sls</code></a> file),
+  Mosh (the <a href="https://mosh.monaos.org/files/lib/match-ss.html#Pattern_Match"><i>Pattern Match library</i></a>
+  and Saggitarius (the <a href="http://ktakashi.github.io/sagittarius-online-ref/section81.html"><code>(match)</code></a> module).
+  It is also available in the Chicken Scheme's repository as the
   <a href="http://wiki.call-cc.org/eggref/4/matchable">matchable</a>
   module.</p>
 
@@ -143,10 +154,10 @@ it is often more clear and concise to write
 <p>The <code>&lt;pattern-<i>X</i>&gt;</code> expressions are interpreted
   in the following way: if a pattern is a literal, then it matches
   the data that is equal to that literal. Otherwise, if it is a regular
-  unquoted symbol, then the match succeeds, and the symbol gets bound
-  to the value being pattern-matched. If the pattern is the special symbol
-  <code>_</code> (underscore), then the match succeeds, but the symbol
-  is not bound.</p>
+  unquoted symbol (henceforth called <i>a pattern variable</i>), then
+  the match succeeds, and the symbol gets bound to the value being pattern-matched.
+  If the pattern is the special symbol <code>_</code> (underscore), then
+  the match succeeds, but the symbol is not bound.</p>
 
 <h3>Compound patterns</h3>
 
@@ -505,6 +516,106 @@ in their Racket program. It can also be found in the
   <i>derived patterns</i>. In addition to the <code>match</code> form,
   Racket provides the <code>define-match-expander</code> extension mechanism,
   which allows one to define new types of patterns.</p>
+
+<h2>The Bigloo pattern matcher</h2>
+
+<p>The Bigloo pattern matcher is distributed
+  <a href="http://www-sop.inria.fr/mimosa/fp/Bigloo/manual-chapter6.html">along with</a>
+  the Bigloo scheme implementation, but it is also
+  <a href="https://stklos.net/Doc/html/stklos-ref-6.html">provided by</a> STKlos.
+  According to the, it supports the following syntax:</p>
+
+ <pre>
+&lt;pattern&gt; ⇒                Matches:
+
+  &lt;atom&gt;                    the &lt;atom&gt;.
+| (kwote &lt;atom&gt;)            any expression eq? to &lt;atom&gt;.
+| (and &lt;pat1&gt; ... &lt;patn&gt;)   if all of &lt;pati&gt; match.
+| (or &lt;pat1&gt; ... ...&lt;patn&gt;) if any of &lt;pat1&gt; through &lt;patn&gt; matches.
+| (not &lt;pat&gt;)               if &lt;pat&gt; doesn't match.
+| (? &lt;predicate&gt;)           if &lt;predicate&gt; is true.
+| (&lt;pat1&gt; ... &lt;patn&gt;)       a list of n elements. Here, ... is a
+                            meta-character denoting a finite repetition
+                            of patterns.
+| &lt;pat&gt; ...                 a (possibly empty) repetition
+                            of &lt;pat&gt; in a list.
+| #(&lt;pat&gt; ... &lt;patn&gt;)       a vector of n elements.
+| #{&lt;struct&gt; &lt;pat&gt; ... }    a structure.
+| ?&lt;id&gt;                     anything, and binds id as a variable.
+| ?-                        anything.
+| ??-                       any (possibly empty) repetition of anything
+                            in a list.
+| ???-                      any end of list.
+
+ </pre>
+
+<p>The most apparent differences between Bigloo and the two matchers
+  described above are the following:
+<ul>
+  <li>the pattern variables must begin with the <code>?</code> (question mark) symbol.
+    All symbols that do not begin with the question mark (except <code>kwote</code>,
+    <code>and</code>, <code>or</code> and <code>not</code> that have a special
+    meaning) are treated as literal symbols;</li>
+  <li>the special identifier <code>?-</code> is used (instead of <code>_</code>) to
+    match anything without performing a binding;</li>
+  <li>the <code>quasiquote</code> form is not supported.</li>
+</ul>
+
+</p>
+
+<h2>The Gerbil pattern matcher</h2>
+
+<p>According to the
+  <a href="https://cons.io/reference/core-prelude.html#pattern-matching">documentation</a>,
+  the pattern matcher bundled with Gerbil Scheme supports the following syntax:
+</p>
+
+<pre>
+(match expr
+  (pattern body ...) ...
+  [(else body ...)])
+
+&lt;pattern&gt;:
+ (? test)                          ; predicate test with the `?` predicate constructor
+ (? test pattern)                  ; test and match a pattern
+ (? test =&gt; pattern)               ; test and match a pattern on the value of the test
+ (? test :: proc =&gt; pattern)       ; test and match with a filter
+ (and pattern ...)                 ; match all patterns
+ (or pattern ...)                  ; match any pattern
+ (not pattern)                     ; negated match
+ (cons pattern1 pattern2)          ; destructure a pair like cons
+ (cons* pattern ... pattern-tail)  ; destructure a list like cons*
+ [pattern ...]                     ;
+ (@list pattern ...)               ; destructure a list like @list
+ (box pattern)                     ;
+ #&pattern                         ; destructure a box
+ (values pattern ...)              ; destructure a values tuple
+ (vector pattern ...)              ;
+ #(pattern ...)                    ; destructure a vector
+ (struct-id pattern ...)           ; destructure a struct
+ (class-id (slot pattern) ...)     ; destructure a class
+ (eq? val)                         ; match eq? to val
+ (eqv? val)                        ; match eqv? to val
+ (equal? val)                      ; match equal? to val
+ (quote expr)                      ; match eq?/eqv?/equal? to a quoted value
+ (quasiquote datum)                ; destructure with quasiquote
+ (apply getf pattern)              ; applicative destructuring
+ (match-macro arg ...)             ; apply match macro expander
+ _                                 ; match any and ignore
+ id                                ; match any and bind to id
+ datum                             ; match eq?/eqv?/equal? to a datum
+
+(match &lt;&gt; (match-pattern body ...) ...)
+=&gt; (lambda (obj) (match obj (match-pattern body ...) ...))
+
+(match &lt;...&gt; (match-pattern body ...) ...)
+=&gt; (lambda args (match args (match-pattern body ...) ...))
+</pre>
+
+<p>The syntax is therefore largely compatible with the Wright-Cartwright-Shinn
+  matcher and the Racket matcher. The noteworthy differences are the following:
+  
+</p>
 
 <h2>The Friedman-Hilsdale-Dybvig pattern matcher</h2>
 
@@ -930,6 +1041,19 @@ The documentation provides the following syntax for patterns
 </pre>
 
 <h2>Acknowledgements</h2>
+
+<p>
+  This work has provoked the emergence of SRFI-204, which, due to
+  its much greater scope and ambition, has never been finalized.
+</p>
+<p>
+  However, a lot of excellent work done by the author of SRFI-204,
+  Felix Thibault, has been incorporated into this document.
+</p>
+<p>
+  The author's first exposure to pattern matching in Scheme
+  
+</p>
 
 ??? credit where it is due
 
