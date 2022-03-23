@@ -1131,7 +1131,7 @@ The documentation provides the following syntax for patterns
                        bindings/final
                        actions ... alternative))
 </pre>
-      
+
 <p>could then be rewritten as</p>
 
 <pre>
@@ -1153,7 +1153,7 @@ The documentation provides the following syntax for patterns
     <code>syntax-rules</code></p>
 
  <p>Both singularities could also be resolved in an extended variant
- of <code>syntax-rules</code> that permits pattern guards.</p>  
+ of <code>syntax-rules</code> that permits pattern guards.</p>
 
  <p>However, it is also possible to avoid the need for pattern guards
    by applying a few tricks devised by Oleg Kiselyov.</p>
@@ -1164,7 +1164,7 @@ The documentation provides the following syntax for patterns
    identifier, and otherwise expands to its third argument
    (this style of writing macros is broadly called "CPS macros",
    because it resembles the Continuation-Passing Style).</p>
- 
+
 <pre>
 (define-syntax identifier/literal
   (syntax-rules ()
@@ -1253,7 +1253,7 @@ with the failure branch.
                    (and conditions ... (equal? root 'datum))
                    bindings
                    actions ... alternative))
-        
+
     ((match-clause ((`(left . right) root) . rest)
                    (and conditions ...)
                    bindings
@@ -1285,8 +1285,8 @@ with the failure branch.
      (if condition
          (let bindings actions ...)
          alternative))
-      
-    ((check/unique condition 
+
+    ((check/unique condition
                    ((variable path) . bindings)
                    #f
                    bindings/checked
@@ -1298,7 +1298,7 @@ with the failure branch.
                    bindings/checked
                    bindings/final
                    actions ... alternative))
-    
+
     ((check/unique (and conditions ...)
                    ((variable path) . bindings)
                    (variable+ path+)
