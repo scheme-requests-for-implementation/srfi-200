@@ -24,20 +24,21 @@
                    bindings/checked
                    bindings/final
                    actions ... alternative)
-     (same-variable variable variable+
-                    (check/unique (and conditions ... (equal? path path+))
-                                  bindings
-                                  (variable+ path+)
-                                  bindings/checked
-                                  bindings/final
-                                  actions ... alternative)
-                    (check/unique (and conditions ...)
-                                  bindings
-                                  (variable+ path+)
-                                  ((variable path) . bindings/checked)
-                                  bindings/final
-                                  actions ... alternative)))
-      ((check/unique conditions
+     (same-variable
+      variable variable+
+      (check/unique (and conditions ... (equal? path path+))
+                    bindings
+                    (variable+ path+)
+                    bindings/checked
+                    bindings/final
+                    actions ... alternative)
+      (check/unique (and conditions ...)
+                    bindings
+                    (variable+ path+)
+                    ((variable path) . bindings/checked)
+                    bindings/final
+                    actions ... alternative)))
+    ((check/unique conditions
                      ()
                      (variable path)
                      bindings/checked
@@ -61,7 +62,7 @@
 
 
 (define-syntax match-clause
-  (syntax-rules (quasiquote unquote and _)
+  (syntax-rules (quote quasiquote unquote and _)
 
     ((match-clause () condition bindings actions ... alternative)
      (check/unique condition bindings #f () () actions ... alternative))
@@ -83,7 +84,16 @@
                    condition
                    bindings
                    actions ... alternative))
-        
+
+    ((match-clause (('datum root) . rest)
+                   (and conditions ...)
+                   bindings
+                   actions ... alternative)
+     (match-clause rest
+                   (and conditions ... (equal? root 'datum))
+                   bindings
+                   actions ... alternative))
+    
     ((match-clause ((`(left . right) root) . rest)
                    (and conditions ...)
                    bindings
@@ -97,15 +107,16 @@
                    (and conditions ...)
                    bindings
                    actions ... alternative)
-     (identifier/literal atom
-                         (match-clause rest
-                                       (and conditions ...)
-                                       ((atom root) . bindings)
-                                       actions ... alternative)
-                         (match-clause rest
-                                       (and conditions ... (equal? atom root))
-                                       bindings
-                                       actions ... alternative)))
+     (identifier/literal
+      atom
+      (match-clause rest
+                    (and conditions ...)
+                    ((atom root) . bindings)
+                    actions ... alternative)
+      (match-clause rest
+                    (and conditions ... (equal? atom root))
+                    bindings
+                    actions ... alternative)))
     ))
 
 (define-syntax identifier/literal
