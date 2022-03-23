@@ -31,7 +31,7 @@
   distributed with the Racket programming environment, as well
   as the Bigloo and Gerbil pattern matchers distributed with
   their respective implementations.
-  It then extracts a pattern syntax which is compatible with two of
+  It then extracts a pattern syntax which is compatible with three of
   those implementations and provides extrinsic rationale for that
   syntax.
   It also provides a simple implementation of a pattern matcher
@@ -144,7 +144,7 @@ it is often more clear and concise to write
   LispKit (the <a href="https://github.com/objecthub/swift-lispkit/blob/master/Sources/LispKit/Resources/Libraries/lispkit/match.sld"><code>match.sld</code></a> file),
   Loko (the <a href="https://gitlab.com/weinholt/loko/-/blob/master/lib/match.sls"><code>match.sls</code></a> file),
   Mosh (the <a href="https://mosh.monaos.org/files/lib/match-ss.html#Pattern_Match"><i>Pattern Match library</i></a>
-  and Saggitarius (the <a href="http://ktakashi.github.io/sagittarius-online-ref/section81.html"><code>(match)</code></a> module).
+  and Sagittarius (the <a href="http://ktakashi.github.io/sagittarius-online-ref/section81.html"><code>(match)</code></a> module).
   It is also available in the Chicken Scheme's repository as the
   <a href="http://wiki.call-cc.org/eggref/4/matchable">matchable</a>
   module.</p>
@@ -387,7 +387,7 @@ the following grammar:</p>
 The Racket pattern matcher is typically shipped with the distribution
 of Racket. In order to use it, one needs to <code>(require racket/match)</code>
 in their Racket program. It can also be found in the
-<a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's Github repository</a>.
+<a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's GitHub repository</a>.
 
 <h3>Simple patterns</h3>
 
@@ -550,7 +550,7 @@ in their Racket program. It can also be found in the
  </pre>
 
 <p>The most apparent differences between Bigloo and the two matchers
-  described above are the following:
+  described above are the following:</p>
 <ul>
   <li>the pattern variables must begin with the <code>?</code> (question mark) symbol.
     All symbols that do not begin with the question mark (except <code>kwote</code>,
@@ -558,10 +558,11 @@ in their Racket program. It can also be found in the
     meaning) are treated as literal symbols;</li>
   <li>the special identifier <code>?-</code> is used (instead of <code>_</code>) to
     match anything without performing a binding;</li>
+  <li>the syntactic keyword used to access the pattern matcher
+  is <code>match-case</code> rather than <code>match</code>;</li>
   <li>the <code>quasiquote</code> form is not supported.</li>
 </ul>
 
-</p>
 
 <h2>The Gerbil pattern matcher</h2>
 
@@ -588,7 +589,7 @@ in their Racket program. It can also be found in the
  [pattern ...]                     ;
  (@list pattern ...)               ; destructure a list like @list
  (box pattern)                     ;
- #&pattern                         ; destructure a box
+ #&amp;pattern                         ; destructure a box
  (values pattern ...)              ; destructure a values tuple
  (vector pattern ...)              ;
  #(pattern ...)                    ; destructure a vector
@@ -612,25 +613,48 @@ in their Racket program. It can also be found in the
 =&gt; (lambda args (match args (match-pattern body ...) ...))
 </pre>
 
-<p>The syntax is therefore largely compatible with the Wright-Cartwright-Shinn
-  matcher and the Racket matcher. The noteworthy differences are the following:
-  
+<p>The syntax is therefore largely compatible with
+  the Wright-Cartwright-Shinn matcher and the Racket matcher.
+  One noteworthy difference is the presence of the <code>@list</code>
+  pattern: it stems from the fact that the Gerbil reader treats
+  the square bracket lists as lists beginning with the
+  <code>@list</code> symbol. (Some Scheme implementations,
+  such as Kawa or - with appropriately set <code>read-options</code>
+  - Guile - use the <code>$bracket-list$</code> symbol for
+  the same purpose, although none of this is R6RS-compliant.)
+</p>
+<p>Outside of the scope of the
+  <code>match</code> syntax, <code>@list</code> is defined as
+  a macro similar to <code>quasiquote</code>, but such that
+  each of its arguments is implicitly <code>unquote</code>d,
+  and the literal symbol <code>...</code> appearing in
+  <code>@list</code>ed object's post-fix position plays a role
+  analogous to <code>unquote-splicing</code>.
+</p>
+<p>
+  Therefore, in the context of the <code>match</code> macro,
+  the <code>@list</code> keyword is defined to mirror that behavior,
+  just like the presence of <code>quasiquote</code> in the
+  Wright-Cartwright-Shinn and Racket matcher's pattern context mirrors
+  the behavior of <code>quasiquote</code> in the regular expression
+  context.
 </p>
 
 <h2>The Friedman-Hilsdale-Dybvig pattern matcher</h2>
 
 <p>A copy of the pattern matcher developed at Indiana University by
   Dan Friedman, Erik Hilsdale and Kent Dybvig can be found
-  on <a href="https://github.com/guenchi/match">Github</a>.</p>
+  on <a href="https://github.com/guenchi/match">GitHub</a>.</p>
 
 <p>The basic syntax of this pattern matcher is similar to the syntax
   of the Wright-Cartwright-Shinn matcher, the key difference being that
-  in the case of Friedman-Hilsdale-Dybvig matcher, the patterns are <i>implicitly
-  quasi-quoted</i>.</p>
+  in the case of Friedman-Hilsdale-Dybvig matcher, the patterns are
+  <i>implicitly quasi-quoted</i>.</p>
 
 <p>This means, that in order to adapt the basic patterns
-  of the Friedman-Hilsdale-Dybvig matcher to the Wright-Cartwright-Shinn matcher,
-  one needs to wrap each pattern in a <code>quasiquote</code>. In other
+  of the Friedman-Hilsdale-Dybvig matcher to the Wright-Cartwright-Shinn
+  matcher, one needs to wrap each pattern in a <code>quasiquote</code>.
+  In other
   words, assuming that the Wright-Cartwright-Shinn matcher is available
   under the <code>match/WCS</code> binding, then the basic syntax of
   the Friedman-Hilsdale-Dybvig matcher can be achieved via the following
@@ -718,9 +742,11 @@ The documentation provides the following syntax for patterns
   already provides some pattern-matching capabilities, namely the
   <code>syntax-rules</code>/<code>syntax-case</code> pattern language.</p>
 
-<p>Unfortunately, the applicability of this language is limited to macro
-  definitions. This limitation is hurtful to the souls of those Scheme
-  programmers who are in love with minimalism, as it requires the duplication
+<p>Unfortunately, the applicability of this language is limited to
+  syntax objects, which are used mainly for expressing Scheme
+  code transformations (such as macro definitions). This limitation
+  is hurtful to the souls of those Scheme programmers who are in love
+  with minimalism, as it requires the duplication
   of the same feature in different context. However, fixing that flaw
   is beyond the scope of this document.</p>
 
@@ -729,13 +755,14 @@ The documentation provides the following syntax for patterns
 <p>This document focuses on libraries which extend the syntax of Scheme
   with pattern-matching capabilities. It is perhaps worth mentioning
   that the term "pattern matching" is also sometimes used in a slightly
-  different sense: not as a syntactic extension to a language, but as a function
-  that takes an s-expression representing a pattern and some object, and returns
-  a list of bindings (for example, in the form of an association list) that
-  could turn a pattern into that object.</p>
+  different sense: not as a syntactic extension to a language, but as
+  a function that takes an s-expression representing a pattern and some
+  object, and returns a list of bindings (for example, in the form of
+  an association list) that could turn a pattern into that object.</p>
 
-<p>This kind of a pattern-matching library has been described, for example,
-  in the <a href="https://github.com/norvig/paip-lisp/blob/master/docs/chapter5.md">fifth chapter</a> of Peter Norvig's book
+<p>This kind of a pattern-matching library has been described,
+  for example, in the
+  <a href="https://github.com/norvig/paip-lisp/blob/master/docs/chapter5.md">fifth chapter</a> of Peter Norvig's book
   <a href="https://github.com/norvig/paip-lisp">The Paradigms of Artificial Intelligence Programming</a>.</p>
 
 <h2>Recommendations</h2>
@@ -749,20 +776,27 @@ The documentation provides the following syntax for patterns
 <h2>Quasi-quotation is the preferred way of expressing patterns</h2>
 
 <p>It has been noted that compound patterns that begin with quasiquote
-  are compatible between the Wright-Cartwright-Shinn matcher and
-  the Racket matcher, and that the Friedman-Hilsdale-Dybvig matcher
-  can trivially be adapted to make quasiquotations explicit.</p>
+  are compatible between the Wright-Cartwright-Shinn matcher,
+  the Racket matcher and the Gerbil matcher, and that the
+  Friedman-Hilsdale-Dybvig matcher can trivially be adapted to make
+  quasiquotations explicit (although - as it was shown by Marc
+  Nieper-Wißkirchen on
+  <a href="https://srfi-email.schemers.org/srfi-200/msg/15097931/">this SRFI's mailing list</a>,
+  it is impossible
+  to express certain patterns in a portable manner - in particular,
+  patterns that are meant to match the literal <code>quasiquote</code>
+  symbol need to be expressed differently).</p>
 
-<p>For this reason, this document recommends that the compound
+<p>This document recommends that the compound
   patterns are expressed using explicit quasiquotation. </p>
 
 <p>The additional advantage of this practice is that it shows
   a symmetry between quasiquotation and pattern matching.</p>
 
 <p>In particular, it recommends sticking to the following subset
-  of the pattern grammar, which is compatible with both Racket
+  of the pattern grammar, which is compatible with Gerbil, Racket
   and Wright-Cartwright-Shinn matcher:</p>
-/
+
 <pre>
   pat ::= identifier                      anything, and binds identifier
         | _                               anything
@@ -792,7 +826,7 @@ The documentation provides the following syntax for patterns
 
 </pre>
 
-<h2>Incompatible features should not be used</h2>
+<h2>A note concerning incompatible features</h2>
 
 <p>This document discourages the use of certain pattern-matching
   features, in particular:</p>
@@ -808,13 +842,26 @@ The documentation provides the following syntax for patterns
   </ul>
 
 <p>More specifically, the uses of those extensions are obviously allowed,
-  but using them makes a program non-SRFI-200-compliant, and thus unportable
-  between different pattern matchers.</p>
+  but using them makes a program non-SRFI-200-compliant, and thus
+  unportable between different pattern matchers.</p>
+
+ <p>This document also doesn't recommend beginning the names of
+   identifier patterns with the <code>?</code> (question mark)
+   character, as the Bigloo matcher does, because it is impossible
+   to distinguish particular systematic forms of symbols in
+   <code>syntax-rules</code> macros. The compatibility with
+   the Bigloo matcher and other matchers is unattainable anyway,
+   because the identifiers that appear in patterns need to be
+   stripped off of the initial question mark in order to refer
+   to the objects bound by those identifiers.
+  </p>
 
 <h2>Implementations</h2>
 
-<p>Two of the three pattern matchers presented here already support the pattern
-  language recommended by this SRFI.</p>
+<p>Three of the five pattern matchers presented here already support
+  the pattern language recommended by this SRFI, and one comes close.
+  Only the Bigloo matcher is almost completely incompatible
+  with this specification.</p>
 
 <p>
   The Wright-Cartwright-Shinn pattern matcher implemented in terms of <code>syntax-rules</code>
@@ -822,10 +869,15 @@ The documentation provides the following syntax for patterns
 
 <p>
   The Racket pattern matcher is distributed with Racket, and is available from
-  <a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's Github repository</a>.
+  <a href="https://github.com/racket/racket/tree/master/racket/collects/racket/match">Racket's GitHub repository</a>.
 </p>
 
-<p>The Friedman-Hilsdale-Dybvig matcher can be adapted to the pattern language
+<p>The code for the Gerbil matcher can be found in
+  <a href="https://github.com/vyzo/gerbil/blob/ee14c66ff685366ab6c0ea8217e4430f9bec76d6/src/gerbil/prelude/core.ss#L2167">the Gerbil repository</a>,
+</p>
+
+<p>Save for a few problematic patterns, the Friedman-Hilsdale-Dybvig
+  matcher can be adapted to the pattern language
   by defining a macro <code>match<sub>WCS</sub></code></p>
 
 <pre>
@@ -835,13 +887,13 @@ The documentation provides the following syntax for patterns
        (match (pattern . body) ...))))
 </pre>
 
-<p>and re-exporting it to shadow the <code>match</code> binding provided by
-  the Friedman-Hilsdale-Dybvig matcher.</p>
+<p>and re-exporting it to shadow the <code>match</code> binding
+  provided by the Friedman-Hilsdale-Dybvig matcher.</p>
 
 <p>
   A copy of the pattern matcher developed at Indiana University by
   Dan Friedman, Erik Hilsdale and Kent Dybvig can be found
-  on <a href="https://github.com/guenchi/match">Github</a>.
+  on <a href="https://github.com/guenchi/match">GitHub</a>.
 </p>
 
 <p>Lastly, one could use a simple reference implementation
@@ -911,7 +963,7 @@ The documentation provides the following syntax for patterns
 <pre>
 (define-syntax match-clause
   (lambda (stx)
-    (syntax-case stx (quasiquote unquote and _)
+    (syntax-case stx (quote quasiquote unquote and _)
       ((match-clause () condition bindings actions ... alternative)
        #'(check/unique condition bindings #f () () actions ... alternative))
 
@@ -943,6 +995,15 @@ The documentation provides the following syntax for patterns
                        ((variable root) . bindings)
                        actions ... alternative))
 
+      ((match-clause (('datum root) . rest)
+                     (and conditions ...)
+                     bindings
+                     actions ... alternative)
+       #'(match-clause rest
+                       (and conditions ... (equal? root 'datum))
+                       bindings
+                       actions ... alternative))
+
       ((match-clause ((`(left . right) root) . rest)
                      (and conditions ...)
                      bindings
@@ -963,17 +1024,17 @@ The documentation provides the following syntax for patterns
       )))
 </pre>
 
-<p>As mentioned earlier, the <code>check/unique</code> macro is responsible
-  for extending <code>condition</code> with equality checks if there is more
-  than one instance of a given identifier, and to remove <code>bindings</code>
-  with duplicate identifiers.</p>
+<p>As mentioned earlier, the <code>check/unique</code> macro is
+  responsible for extending <code>condition</code> with equality
+  checks if there is more than one instance of a given identifier,
+  and to remove <code>bindings</code> with duplicate identifiers.</p>
 
-<p>In addition to <code>bindings</code>, it maintains a currently processed
-  <code>(variable path)</code> binding (or the <code>#f</code> value in the
-  edge cases), a list called <code>bindings/checked</code>, consisting of
-  all bindings that didn't contain the identifier currently being processed,
-  and a list <code>bindings/final</code>, consisting of all bindings that
-  were already tested against duplicates.</p>
+<p>In addition to <code>bindings</code>, it maintains a currently
+  processed <code>(variable path)</code> binding (or the <code>#f</code>
+  value in the edge cases), a list called <code>bindings/checked</code>,
+  consisting of all bindings that didn't contain the identifier currently
+  being processed, and a list <code>bindings/final</code>, consisting of
+  all bindings that were already tested against duplicates.</p>
 
 <pre>
 (define-syntax check/unique
@@ -1040,7 +1101,240 @@ The documentation provides the following syntax for patterns
       )))
 </pre>
 
-<h2>Acknowledgements</h2>
+<h3>Implementation in terms of <code>syntax-rules</code></h3>
+
+<p>
+  The above definition of <code>match-clause</code> only uses
+  <code>syntax-case</code> macros because it needs to use the
+  <code>identifier?</code> predicate in one pattern guard. Likewise,
+  the definition of the <code>check/unique</code> needs to use
+  the <code>bound-identifier=?</code> predicate in one pattern
+  guard.
+</p>
+
+<p>The latter could be easily avoided if the <code>syntax-rules</code>
+  pattern language allowed to repeat identifiers in patterns. The case
+</p>
+
+<pre>
+      ((check/unique (and conditions ...)
+                     ((variable path) . bindings)
+                     (variable+ path+)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       (bound-identifier=? #'variable #'variable+)
+       #'(check/unique (and conditions ... (equal? path path+))
+                       bindings
+                       (variable+ path+)
+                       bindings/checked
+                       bindings/final
+                       actions ... alternative))
+</pre>
+      
+<p>could then be rewritten as</p>
+
+<pre>
+      ((check/unique (and conditions ...)
+                     ((variable path) . bindings)
+                     (variable path+)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       #'(check/unique (and conditions ... (equal? path path+))
+                       bindings
+                       (variable path+)
+                       bindings/checked
+                       bindings/final
+                       actions ... alternative))
+</pre>
+
+ <p>and the whole macro could be easily transformed to
+    <code>syntax-rules</code></p>
+
+ <p>Both singularities could also be resolved in an extended variant
+ of <code>syntax-rules</code> that permits pattern guards.</p>  
+
+ <p>However, it is also possible to avoid the need for pattern guards
+   by applying a few tricks devised by Oleg Kiselyov.</p>
+
+ <p>The <code>identifier?</code> predicate can be replaced with
+   the following <code>identifier/literal</code> macro, which
+   expands to its second argument if its first argument is an
+   identifier, and otherwise expands to its third argument
+   (this style of writing macros is broadly called "CPS macros",
+   because it resembles the Continuation-Passing Style).</p>
+ 
+<pre>
+(define-syntax identifier/literal
+  (syntax-rules ()
+    ((identifier/literal atom identifier literal)
+     (let-syntax ((check-identifier (syntax-rules ()
+                                      ((_ atom symbol _) symbol)
+                                      ((_ datum _ value) value))))
+       (check-identifier raw-symbol identifier literal)))))
+</pre>
+
+<p>The key trick is the definition of a local macro (using
+  the <code>let-syntax</code> form) and then calling this locally
+  defined macro with some unbound identifier (in our case
+  we chose the name <code>raw-symbol</code>).</p>
+
+<p>As the local macro uses the <code>atom</code> argument,
+  the first rule matches against the <code>raw-symbol</code>
+  only if <code>atom</code> is also an identifier - then
+the expression will be replaced by the successful branch. Otherwise
+  (e.g. if <code>atom</code> is a list, or a number, or a boolean
+etc.) the first rule will fail, and the second rule will be
+tested which always matches, and the expression will be replaced
+with the failure branch.
+</p>
+
+<p>The second guard, consisting of the <code>bound-identifier=?</code>
+  predicate can be replaced using a very similar trick,
+  but this time the macro will take two arguments, and - as before
+  - two continuation arguments:</p>
+
+<pre>
+(define-syntax same-variable
+  (syntax-rules ()
+    ((_ x y same differ)
+     (let-syntax ((x= (syntax-rules (x)
+                        ((_ x identical _) identical)
+                        ((_ z _ different) different))))
+       (x= y same differ)))))
+</pre>
+
+<p>The code is almost exactly the same, with two important differences:
+  first, the identifier <code>x</code> (first argument) appears on
+  the local macro's literals' list; second, instead of passing
+  an unbound symbol, we now pass the second argument of our macro,
+  namely - <code>y</code> - to the inner macro.</p>
+
+<p>The first pattern of the inner macro will match only if the
+  second argument is the same identifier as the first one; otherwise
+  the second rule succeeds which matches anything.</p>
+
+<p>Those two macros allow us to construct the definitions for
+  <code>match-clause</code> and <code>check/unique</code>
+  exclusively in terms of simple <code>syntax-rules</code>
+  transformations:</p>
+
+<pre>
+(define-syntax match-clause
+  (syntax-rules (quote quasiquote unquote and _)
+
+    ((match-clause () condition bindings actions ... alternative)
+     (check/unique condition bindings #f () () actions ... alternative))
+
+    ((match-clause ((`,pattern root) . rest)
+                   condition
+                   bindings
+                   actions ... alternative)
+     (match-clause ((pattern root) . rest)
+                   condition
+                   bindings
+                   actions ... alternative))
+
+    ((match-clause ((_ root) . rest)
+                   condition
+                   bindings
+                   actions ... alternative)
+     (match-clause rest
+                   condition
+                   bindings
+                   actions ... alternative))
+
+    ((match-clause (('datum root) . rest)
+                   (and conditions ...)
+                   bindings
+                   actions ... alternative)
+     (match-clause rest
+                   (and conditions ... (equal? root 'datum))
+                   bindings
+                   actions ... alternative))
+        
+    ((match-clause ((`(left . right) root) . rest)
+                   (and conditions ...)
+                   bindings
+                   actions ... alternative)
+     (match-clause ((`left (car root)) (`right (cdr root)) . rest)
+                   (and conditions ... (pair? root))
+                   bindings
+                   actions ... alternative))
+
+    ((match-clause ((atom root) . rest)
+                   (and conditions ...)
+                   bindings
+                   actions ... alternative)
+     (identifier/literal
+      atom
+      (match-clause rest
+                    (and conditions ...)
+                    ((atom root) . bindings)
+                    actions ... alternative)
+      (match-clause rest
+                    (and conditions ... (equal? atom root))
+                    bindings
+                    actions ... alternative)))
+    ))
+
+(define-syntax check/unique
+  (syntax-rules (and)
+    ((check/unique condition () #f () bindings actions ... alternative)
+     (if condition
+         (let bindings actions ...)
+         alternative))
+      
+    ((check/unique condition 
+                   ((variable path) . bindings)
+                   #f
+                   bindings/checked
+                   bindings/final
+                   actions ... alternative)
+     (check/unique condition
+                   bindings
+                   (variable path)
+                   bindings/checked
+                   bindings/final
+                   actions ... alternative))
+    
+    ((check/unique (and conditions ...)
+                   ((variable path) . bindings)
+                   (variable+ path+)
+                   bindings/checked
+                   bindings/final
+                   actions ... alternative)
+     (same-variable variable variable+
+                    (check/unique (and conditions ... (equal? path path+))
+                                  bindings
+                                  (variable+ path+)
+                                  bindings/checked
+                                  bindings/final
+                                  actions ... alternative)
+                    (check/unique (and conditions ...)
+                                  bindings
+                                  (variable+ path+)
+                                  ((variable path) . bindings/checked)
+                                  bindings/final
+                                  actions ... alternative)))
+      ((check/unique conditions
+                     ()
+                     (variable path)
+                     bindings/checked
+                     bindings/final
+                     actions ... alternative)
+       (check/unique conditions
+                     bindings/checked
+                     #f
+                     ()
+                     ((variable path) . bindings/final)
+                     actions ... alternative))
+      ))
+</pre>
+
+
+<h2>Acknowledgments</h2>
 
 <p>
   This work has provoked the emergence of SRFI-204, which, due to
@@ -1048,17 +1342,41 @@ The documentation provides the following syntax for patterns
 </p>
 <p>
   However, a lot of excellent work done by the author of SRFI-204,
-  Felix Thibault, has been incorporated into this document.
+  Felix Thibault, has been (indirectly) incorporated into this document.
+  Felix' work prompted sections on Bigloo and Gerbil matchers,
+  and most references werw borrowed from his document.
 </p>
 <p>
   The author's first exposure to pattern matching in Scheme
-  
+  occurred through the Shinn matcher that was shipped with Guile,
+  along with excellent documentation. The author is therefore
+  grateful to both Alex Shinn and the Guile team (at that time
+  consisting of Mark H. Weaver, Ludovic Courtes and Andy Wingo).
 </p>
+<p>
+  Alex Shinn deserves additional credit for explaining to me the
+  tricks invented by Oleg Kiselyov that allow to express in
+  <code>syntax-rules</code> things that otherwise would only be
+  expressible using pattern guards.</p>
 
-??? credit where it is due
+<p>I am also grateful to everybody who contributed their time
+  and effort on this SRFI's mailing list. In particular, I was
+  constantly impressed by both the involvement and the depth
+  of analysis shown by Marc Nieper-Wißkirchen and Shiro Kawai.</p>
+
+<p>This work probably would never see the daylight if John Cowan
+  didn't encourage me to participate in the SRFI process, and
+  if Arthur Gleckler hadn't decided to carry on the torch
+  of animating the SRFI process. He's probably the most patient
+  SRFI editor the world could ever imagine.</p>
+
+<p>Of course, it would not be possible to write a review
+  of existing pattern matchers if they weren't existing, so
+  this document owes its own existence to their respective
+  creators.</p>
 
 <h2>Copyright</h2>
-Copyright &copy; Panicz Maciej Godek (2020).
+Copyright &copy; Panicz Maciej Godek (2020-2022).
 
 <p>
   Permission is hereby granted, free of charge, to any person
